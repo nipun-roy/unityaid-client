@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, AuthResponse } from '@/lib/types';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
       const res = await api.post<AuthResponse>('/auth/login', { email, password });
       setUser(res.user);
@@ -83,9 +83,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error(error.message || 'Login failed');
       return false;
     }
-  };
+  }, []);
 
-  const register = async (name: string, email: string, photoURL: string, password: string): Promise<boolean> => {
+  const register = useCallback(async (name: string, email: string, photoURL: string, password: string): Promise<boolean> => {
     try {
       const res = await api.post<AuthResponse>('/auth/register', { name, email, photoURL, password });
       setUser(res.user);
@@ -98,13 +98,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error(error.message || 'Registration failed');
       return false;
     }
-  };
+  }, []);
 
-  const tokenClientRef = React.useRef<any>(null);
-  const resolveRef = React.useRef<((val: boolean) => void) | null>(null);
+  const tokenClientRef = useRef<any>(null);
+  const resolveRef = useRef<((val: boolean) => void) | null>(null);
 
-  // Pre-initialize Google Token Client once on mount so popups are never blocked
-  React.useEffect(() => {
+  // Pre-initialize Google Token Client once on mount so popups are less likely to be blocked
+  useEffect(() => {
     const clientId =
       process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
       '987371447787-v2posuctid61ijjqndmgoq35215qoqc6.apps.googleusercontent.com';
@@ -165,7 +165,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           error_callback: (err: any) => {
             console.error('Google token error:', err);
             if (err?.type === 'popup_failed_to_open') {
-              toast.error('Popup blocked by browser! Please allow popups for this site.', { duration: 5000 });
+              toast.error('Browser blocked popup window! Click the popup icon in your URL bar to allow it.', { duration: 6000 });
             } else {
               toast.error(err?.message || 'Google sign-in prompt closed');
             }
@@ -188,7 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Synchronous invocation within direct user gesture
-  const googleLogin = async (): Promise<boolean> => {
+  const googleLogin = useCallback(async (): Promise<boolean> => {
     return new Promise((resolve) => {
       resolveRef.current = resolve;
 
@@ -200,7 +200,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
-        // Quick fallback initialization if not already ready
         const clientId =
           process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
           '987371447787-v2posuctid61ijjqndmgoq35215qoqc6.apps.googleusercontent.com';
@@ -219,25 +218,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resolve(false);
       }
     });
-  };
+  }, []);
 
   // Process Google ID Token JWT from official Google Sign-in button or One Tap
-  const handleGoogleCredential = async (credential: string): Promise<boolean> => {
+  const handleGoogleCredential = useCallback(async (credential: string): Promise<boolean> => {
     try {
-      const base64Url = credential.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      const payload = JSON.parse(jsonPayload);
+      let name = 'Google User';
+      let email = '';
+      let picture = '/images/common/default-avatar.jpg';
+
+      try {
+        const base64Url = credential.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
+        const payload = JSON.parse(jsonPayload);
+        name = payload.name || name;
+        email = payload.email || email;
+        picture = payload.picture || picture;
+      } catch (e) {
+        console.warn('Local decode failed, delegating to backend:', e);
+      }
 
       const res = await api.post<AuthResponse>('/auth/google', {
-        name: payload.name,
-        email: payload.email,
-        photoURL: payload.picture || '/images/common/default-avatar.jpg',
+        name,
+        email,
+        photoURL: picture,
         credential,
       });
 
@@ -252,9 +262,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error(err.message || 'Failed to authenticate with Google');
       return false;
     }
-  };
+  }, []);
 
-  const updateUserProfile = async (name: string, photoURL: string): Promise<boolean> => {
+  const updateUserProfile = useCallback(async (name: string, photoURL: string): Promise<boolean> => {
     try {
       const res = await api.patch<{ message: string; user: User }>('/auth/profile', { name, photoURL });
       setUser(res.user);
@@ -265,15 +275,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error(error.message || 'Failed to update profile');
       return false;
     }
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('unityaid_token');
     localStorage.removeItem('unityaid_user');
     toast.success('Logged out successfully');
-  };
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -295,4 +305,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useAuth = () => useContext(AuthContext);
-

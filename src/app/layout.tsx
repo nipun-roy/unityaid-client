@@ -20,13 +20,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" data-theme="light" suppressHydrationWarning>
-      <head>
+      <body className="min-h-screen flex flex-col justify-between selection:bg-green-500 selection:text-white">
         <Script 
           src="https://accounts.google.com/gsi/client" 
           strategy="afterInteractive" 
         />
-      </head>
-      <body className="min-h-screen flex flex-col justify-between selection:bg-green-500 selection:text-white">
         <ThemeProvider>
           <AuthProvider>
             <Toaster 

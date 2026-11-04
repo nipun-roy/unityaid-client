@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { User, Mail, Lock, Image as ImageIcon, HeartHandshake, UserPlus, Check, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 function RegisterForm() {
   const router = useRouter();
@@ -192,6 +193,17 @@ function RegisterForm() {
             <span>{loading ? 'Creating Account...' : 'Register'}</span>
           </button>
         </form>
+
+        {/* Divider */}
+        <div className="relative flex items-center justify-center">
+          <div className="border-t border-base-200 w-full"></div>
+          <span className="bg-base-100 px-3 text-xs uppercase tracking-wider text-base-content/60 font-semibold absolute">
+            or continue with
+          </span>
+        </div>
+
+        {/* Google Sign-in */}
+        <GoogleSignInButton redirectUrl={redirectUrl} />
 
         {/* Redirect to Login */}
         <p className="text-center text-xs text-base-content/70">
