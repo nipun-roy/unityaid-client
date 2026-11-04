@@ -98,23 +98,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Real Google Sign-in with Google Identity Services (OAuth 2.0)
-  const googleLogin = async (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const clientId =
-        process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-        '987371447787-v2posuctid61ijjqndmgoq35215qoqc6.apps.googleusercontent.com';
+  const tokenClientRef = React.useRef<any>(null);
+  const resolveRef = React.useRef<((val: boolean) => void) | null>(null);
 
-      // Check if Google Identity script is loaded
+  // Pre-initialize Google Token Client once on mount so popups are never blocked
+  React.useEffect(() => {
+    const clientId =
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+      '987371447787-v2posuctid61ijjqndmgoq35215qoqc6.apps.googleusercontent.com';
+
+    const setupGoogle = () => {
       const google = typeof window !== 'undefined' ? (window as any).google : null;
-      if (!google || !google.accounts || !google.accounts.oauth2) {
-        toast.error('Google service is loading. Please try again in 2 seconds.');
-        resolve(false);
-        return;
-      }
+      if (!google?.accounts?.oauth2) return false;
 
       try {
-        const tokenClient = google.accounts.oauth2.initTokenClient({
+        tokenClientRef.current = google.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope: 'email profile openid',
           callback: async (tokenResponse: any) => {
@@ -125,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               } else {
                 toast.error(tokenResponse.error_description || 'Google sign-in failed');
               }
-              resolve(false);
+              resolveRef.current?.(false);
               return;
             }
 
@@ -155,21 +153,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               localStorage.setItem('unityaid_token', res.token);
               localStorage.setItem('unityaid_user', JSON.stringify(res.user));
               toast.success(`Welcome, ${res.user.name}!`);
-              resolve(true);
+              resolveRef.current?.(true);
             } catch (err: any) {
               console.error('Auth sync error:', err);
               toast.error(err.message || 'Failed to sync Google user with server');
-              resolve(false);
+              resolveRef.current?.(false);
             }
           },
           error_callback: (err: any) => {
             console.error('Google token error:', err);
-            toast.error(err.message || 'Google sign-in prompt closed');
-            resolve(false);
+            if (err?.type === 'popup_failed_to_open') {
+              toast.error('Popup blocked by browser! Please allow popups for this site.', { duration: 5000 });
+            } else {
+              toast.error(err?.message || 'Google sign-in prompt closed');
+            }
+            resolveRef.current?.(false);
           },
         });
+        return true;
+      } catch (err) {
+        console.error('InitTokenClient error:', err);
+        return false;
+      }
+    };
 
-        tokenClient.requestAccessToken({ prompt: 'select_account' });
+    if (!setupGoogle()) {
+      const timer = setInterval(() => {
+        if (setupGoogle()) clearInterval(timer);
+      }, 300);
+      return () => clearInterval(timer);
+    }
+  }, []);
+
+  // Synchronous invocation within direct user gesture
+  const googleLogin = async (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      resolveRef.current = resolve;
+
+      if (!tokenClientRef.current) {
+        const google = typeof window !== 'undefined' ? (window as any).google : null;
+        if (!google?.accounts?.oauth2) {
+          toast.error('Google service is loading. Please try again in 2 seconds.');
+          resolve(false);
+          return;
+        }
+
+        // Quick fallback initialization if not already ready
+        const clientId =
+          process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+          '987371447787-v2posuctid61ijjqndmgoq35215qoqc6.apps.googleusercontent.com';
+        tokenClientRef.current = google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'email profile openid',
+          callback: () => {},
+        });
+      }
+
+      try {
+        tokenClientRef.current.requestAccessToken({ prompt: 'select_account' });
       } catch (err: any) {
         console.error('Google init error:', err);
         toast.error(err.message || 'Google sign-in initialization failed');

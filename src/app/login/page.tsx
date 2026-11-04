@@ -36,16 +36,12 @@ function LoginForm() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true);
-      const success = await googleLogin();
+  const handleGoogleSignIn = () => {
+    googleLogin().then((success) => {
       if (success) {
         router.push(redirectUrl);
       }
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (
