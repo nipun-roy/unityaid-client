@@ -90,7 +90,7 @@ export default function HomePage() {
 
                 <Link
                   href="/events/create"
-                  className="w-full sm:w-auto btn btn-outline border-base-300 hover:border-green-600 hover:bg-base-200 text-base-content px-8 h-12 rounded-xl text-base font-semibold"
+                  className="w-full sm:w-auto btn bg-base-100 hover:bg-base-200 border border-base-300 hover:border-green-600 text-base-content px-8 h-12 rounded-xl text-base font-semibold shadow-sm transition-colors"
                 >
                   Host an Event
                 </Link>

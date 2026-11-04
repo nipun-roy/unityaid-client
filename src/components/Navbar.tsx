@@ -265,7 +265,7 @@ export default function Navbar() {
               <Link
                 href="/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="btn btn-sm btn-outline text-base-content"
+                className="btn btn-sm bg-base-100 hover:bg-base-200 border border-base-300 text-base-content"
               >
                 Login
               </Link>
