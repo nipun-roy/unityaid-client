@@ -12,6 +12,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, photoURL: string, password: string) => Promise<boolean>;
   googleLogin: () => Promise<boolean>;
+  handleGoogleCredential: (credential: string) => Promise<boolean>;
   updateUserProfile: (name: string, photoURL: string) => Promise<boolean>;
   logout: () => void;
 }
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => false,
   register: async () => false,
   googleLogin: async () => false,
+  handleGoogleCredential: async () => false,
   updateUserProfile: async () => false,
   logout: () => {},
 });
@@ -219,6 +221,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  // Process Google ID Token JWT from official Google Sign-in button or One Tap
+  const handleGoogleCredential = async (credential: string): Promise<boolean> => {
+    try {
+      const base64Url = credential.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      const payload = JSON.parse(jsonPayload);
+
+      const res = await api.post<AuthResponse>('/auth/google', {
+        name: payload.name,
+        email: payload.email,
+        photoURL: payload.picture || '/images/common/default-avatar.jpg',
+        credential,
+      });
+
+      setUser(res.user);
+      setToken(res.token);
+      localStorage.setItem('unityaid_token', res.token);
+      localStorage.setItem('unityaid_user', JSON.stringify(res.user));
+      toast.success(`Welcome, ${res.user.name}!`);
+      return true;
+    } catch (err: any) {
+      console.error('Google credential sync error:', err);
+      toast.error(err.message || 'Failed to authenticate with Google');
+      return false;
+    }
+  };
+
   const updateUserProfile = async (name: string, photoURL: string): Promise<boolean> => {
     try {
       const res = await api.patch<{ message: string; user: User }>('/auth/profile', { name, photoURL });
@@ -249,6 +284,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         googleLogin,
+        handleGoogleCredential,
         updateUserProfile,
         logout,
       }}
