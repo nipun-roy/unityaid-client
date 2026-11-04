@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { User, Mail, Lock, Image as ImageIcon, HeartHandshake, UserPlus, Check, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/events';
@@ -206,6 +206,20 @@ export default function RegisterPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[80vh] flex items-center justify-center">
+          <span className="loading loading-spinner loading-lg text-green-600"></span>
+        </div>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
   );
 }
 
