@@ -11,7 +11,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   const pathname = usePathname();
 
   useEffect(() => {
-    // Only redirect once authentication verification is complete
+    // Only redirect once authentication verification is complete, ensuring reload stability
     if (!loading && !user) {
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
     }
