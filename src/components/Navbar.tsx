@@ -73,84 +73,99 @@ export default function Navbar() {
             <ThemeToggle />
 
             {user ? (
-              <div className="relative">
-                {/* Profile Picture with hover display name */}
-                <button
-                  type="button"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
-                  title={user.name}
-                  className="flex items-center gap-2 p-1.5 rounded-full hover:bg-base-200 transition-all focus:outline-none ring-2 ring-green-500/20"
-                >
-                  <img
-                    src={user.photoURL || '/images/common/default-avatar.jpg'}
-                    alt={user.name}
-                    className="w-8 h-8 rounded-full object-cover ring-2 ring-green-600"
-                  />
-                  <span className="text-sm font-medium text-base-content max-w-[120px] truncate">
-                    {user.name}
-                  </span>
-                  <ChevronDown className="w-4 h-4 text-base-content/60" />
-                </button>
-
-                {/* Dropdown Menu */}
-                {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-base-100 shadow-xl border border-base-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="px-4 py-2 border-b border-base-200">
-                      <p className="text-sm font-bold text-base-content truncate">{user.name}</p>
-                      <p className="text-xs text-base-content/60 truncate">{user.email}</p>
-                    </div>
-
-                    <Link
-                      href="/events/create"
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-base-content/80 hover:bg-green-500/10 hover:text-green-600 transition-colors"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      <PlusCircle className="w-4 h-4 text-green-600" />
-                      Create Event
-                    </Link>
-
-                    <Link
-                      href="/events/manage"
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-base-content/80 hover:bg-green-500/10 hover:text-green-600 transition-colors"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      <ListOrdered className="w-4 h-4 text-blue-500" />
-                      Manage Events
-                    </Link>
-
-                    <Link
-                      href="/events/joined"
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-base-content/80 hover:bg-green-500/10 hover:text-green-600 transition-colors"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      Joined Events
-                    </Link>
-
-                    <Link
-                      href="/profile"
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-base-content/80 hover:bg-green-500/10 hover:text-green-600 transition-colors"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      <UserIcon className="w-4 h-4 text-purple-500" />
-                      My Profile
-                    </Link>
-
-                    <div className="border-t border-base-200 my-1"></div>
-
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  {/* Profile Picture with hover display name */}
+                  <div className="tooltip tooltip-bottom font-medium" data-tip={user.name}>
                     <button
-                      onClick={() => {
-                        setDropdownOpen(false);
-                        logout();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-rose-600 hover:bg-rose-500/10 transition-colors"
+                      type="button"
+                      onClick={() => setDropdownOpen(!dropdownOpen)}
+                      onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
+                      title={user.name}
+                      className="flex items-center gap-2 p-1 rounded-full hover:bg-base-200 transition-all focus:outline-none ring-2 ring-green-500/20"
                     >
-                      <LogOut className="w-4 h-4" />
-                      Logout
+                      <img
+                        src={user.photoURL || '/images/common/default-avatar.jpg'}
+                        alt={user.name}
+                        className="w-8 h-8 rounded-full object-cover ring-2 ring-green-600"
+                      />
+                      <span className="text-sm font-semibold text-base-content max-w-[120px] truncate hidden lg:inline">
+                        {user.name}
+                      </span>
+                      <ChevronDown className="w-3.5 h-3.5 text-base-content/60" />
                     </button>
                   </div>
-                )}
+
+                  {/* Dropdown Menu */}
+                  {dropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-base-100 shadow-xl border border-base-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                      <div className="px-4 py-2 border-b border-base-200">
+                        <p className="text-sm font-bold text-base-content truncate">{user.name}</p>
+                        <p className="text-xs text-base-content/60 truncate">{user.email}</p>
+                      </div>
+
+                      <Link
+                        href="/events/create"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-base-content/80 hover:bg-green-500/10 hover:text-green-600 transition-colors"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <PlusCircle className="w-4 h-4 text-green-600" />
+                        Create Event
+                      </Link>
+
+                      <Link
+                        href="/events/manage"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-base-content/80 hover:bg-green-500/10 hover:text-green-600 transition-colors"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <ListOrdered className="w-4 h-4 text-blue-500" />
+                        Manage Events
+                      </Link>
+
+                      <Link
+                        href="/events/joined"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-base-content/80 hover:bg-green-500/10 hover:text-green-600 transition-colors"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        Joined Events
+                      </Link>
+
+                      <Link
+                        href="/profile"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-base-content/80 hover:bg-green-500/10 hover:text-green-600 transition-colors"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <UserIcon className="w-4 h-4 text-purple-500" />
+                        My Profile
+                      </Link>
+
+                      <div className="border-t border-base-200 my-1"></div>
+
+                      <button
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-rose-600 hover:bg-rose-500/10 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Visible Logout button matching requirement */}
+                <button
+                  type="button"
+                  onClick={logout}
+                  title="Logout"
+                  className="btn btn-sm btn-ghost text-rose-600 hover:bg-rose-500/10 font-semibold gap-1.5 rounded-xl border border-transparent hover:border-rose-200"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden xl:inline text-xs">Logout</span>
+                </button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
