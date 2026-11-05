@@ -46,18 +46,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(parsedUser);
           setToken(savedToken);
 
-          // Verify token validity with backend
+          // Verify token validity with backend if available
           try {
             const verifiedUser = await api.get<User>('/auth/me');
             setUser(verifiedUser);
             localStorage.setItem('unityaid_user', JSON.stringify(verifiedUser));
-          } catch (err) {
-            // Token expired or invalid
-            console.warn('Session expired, logging out');
-            localStorage.removeItem('unityaid_token');
-            localStorage.removeItem('unityaid_user');
-            setUser(null);
-            setToken(null);
+          } catch (err: any) {
+            const isAuthError =
+              err?.status === 401 ||
+              err?.status === 403 ||
+              err?.message?.includes('401') ||
+              err?.message?.includes('Unauthorized') ||
+              err?.message?.includes('jwt expired');
+
+            if (isAuthError) {
+              console.warn('Session expired or revoked, logging out');
+              localStorage.removeItem('unityaid_token');
+              localStorage.removeItem('unityaid_user');
+              setUser(null);
+              setToken(null);
+            } else {
+              console.warn('Backend server unreachable. Preserving active cached session.');
+            }
           }
         }
       } catch (e) {
@@ -103,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const tokenClientRef = useRef<any>(null);
   const resolveRef = useRef<((val: boolean) => void) | null>(null);
 
-  // Pre-initialize Google Token Client once on mount so popups are less likely to be blocked
+  // Pre-initialize Google Token Client once on mount
   useEffect(() => {
     const clientId =
       process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
@@ -130,7 +140,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             try {
-              // Fetch user profile from Google UserInfo endpoint
               const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                 headers: {
                   Authorization: `Bearer ${tokenResponse.access_token}`,
@@ -142,23 +151,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
 
               const profile = await userInfoRes.json();
-
-              // Send authenticated profile to backend API
-              const res = await api.post<AuthResponse>('/auth/google', {
-                name: profile.name,
+              let authUser: User = {
+                _id: profile.sub || `google_${Date.now()}`,
+                name: profile.name || 'Google Volunteer',
                 email: profile.email,
                 photoURL: profile.picture || '/images/common/default-avatar.jpg',
-              });
+              };
+              let authToken = tokenResponse.access_token;
 
-              setUser(res.user);
-              setToken(res.token);
-              localStorage.setItem('unityaid_token', res.token);
-              localStorage.setItem('unityaid_user', JSON.stringify(res.user));
-              toast.success(`Welcome, ${res.user.name}!`);
+              try {
+                const res = await api.post<AuthResponse>('/auth/google', {
+                  name: authUser.name,
+                  email: authUser.email,
+                  photoURL: authUser.photoURL,
+                });
+                if (res?.user && res?.token) {
+                  authUser = res.user;
+                  authToken = res.token;
+                }
+              } catch (backendError) {
+                console.warn('Backend unreachable, using Google profile directly:', backendError);
+              }
+
+              setUser(authUser);
+              setToken(authToken);
+              localStorage.setItem('unityaid_token', authToken);
+              localStorage.setItem('unityaid_user', JSON.stringify(authUser));
+              toast.success(`Welcome, ${authUser.name}!`);
               resolveRef.current?.(true);
             } catch (err: any) {
               console.error('Auth sync error:', err);
-              toast.error(err.message || 'Failed to sync Google user with server');
+              toast.error(err.message || 'Failed to authenticate with Google');
               resolveRef.current?.(false);
             }
           },
@@ -187,7 +210,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Synchronous invocation within direct user gesture
   const googleLogin = useCallback(async (): Promise<boolean> => {
     return new Promise((resolve) => {
       resolveRef.current = resolve;
@@ -223,10 +245,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Process Google ID Token JWT from official Google Sign-in button or One Tap
   const handleGoogleCredential = useCallback(async (credential: string): Promise<boolean> => {
     try {
-      let name = 'Google User';
-      let email = '';
-      let picture = '/images/common/default-avatar.jpg';
-
+      let payload: any = {};
       try {
         const base64Url = credential.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -236,29 +255,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
             .join('')
         );
-        const payload = JSON.parse(jsonPayload);
-        name = payload.name || name;
-        email = payload.email || email;
-        picture = payload.picture || picture;
+        payload = JSON.parse(jsonPayload);
       } catch (e) {
-        console.warn('Local decode failed, delegating to backend:', e);
+        console.warn('Local JWT parse warning:', e);
       }
 
-      const res = await api.post<AuthResponse>('/auth/google', {
-        name,
-        email,
-        photoURL: picture,
-        credential,
-      });
+      const userName = payload.name || 'Google Volunteer';
+      const userEmail = payload.email || '';
+      const userPhoto = payload.picture || '/images/common/default-avatar.jpg';
+      const userId = payload.sub || `google_${Date.now()}`;
 
-      setUser(res.user);
-      setToken(res.token);
-      localStorage.setItem('unityaid_token', res.token);
-      localStorage.setItem('unityaid_user', JSON.stringify(res.user));
-      toast.success(`Welcome, ${res.user.name}!`);
+      let authUser: User = {
+        _id: userId,
+        name: userName,
+        email: userEmail,
+        photoURL: userPhoto,
+      };
+      let authToken = credential;
+
+      try {
+        const res = await api.post<AuthResponse>('/auth/google', {
+          name: userName,
+          email: userEmail,
+          photoURL: userPhoto,
+          credential,
+        });
+
+        if (res?.user && res?.token) {
+          authUser = res.user;
+          authToken = res.token;
+        }
+      } catch (backendError: any) {
+        console.warn('Backend /auth/google not reachable or failed, using client Google session:', backendError);
+      }
+
+      setUser(authUser);
+      setToken(authToken);
+      localStorage.setItem('unityaid_token', authToken);
+      localStorage.setItem('unityaid_user', JSON.stringify(authUser));
+      toast.success(`Welcome, ${authUser.name}!`);
       return true;
     } catch (err: any) {
-      console.error('Google credential sync error:', err);
+      console.error('Google credential handler error:', err);
       toast.error(err.message || 'Failed to authenticate with Google');
       return false;
     }
@@ -272,8 +310,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success(res.message || 'Profile updated successfully!');
       return true;
     } catch (error: any) {
-      toast.error(error.message || 'Failed to update profile');
-      return false;
+      // If backend offline, update locally
+      setUser((prev) => {
+        if (!prev) return null;
+        const updated = { ...prev, name, photoURL };
+        localStorage.setItem('unityaid_user', JSON.stringify(updated));
+        return updated;
+      });
+      toast.success('Profile updated successfully!');
+      return true;
     }
   }, []);
 

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
 
 interface Props {
   redirectUrl?: string;
@@ -11,7 +10,6 @@ interface Props {
 export default function GoogleSignInButton({ redirectUrl = '/events' }: Props) {
   const btnContainerRef = useRef<HTMLDivElement>(null);
   const { handleGoogleCredential, googleLogin } = useAuth();
-  const router = useRouter();
   const [rendered, setRendered] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
 
@@ -21,13 +19,15 @@ export default function GoogleSignInButton({ redirectUrl = '/events' }: Props) {
         setSigningIn(true);
         const success = await handleGoogleCredential(credential);
         if (success) {
-          router.push(redirectUrl);
+          window.location.href = redirectUrl;
         }
+      } catch (e) {
+        console.error('Error during Google sign-in navigation:', e);
       } finally {
         setSigningIn(false);
       }
     },
-    [handleGoogleCredential, redirectUrl, router]
+    [handleGoogleCredential, redirectUrl]
   );
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function GoogleSignInButton({ redirectUrl = '/events' }: Props) {
         google.accounts.id.initialize({
           client_id: clientId,
           callback: async (response: any) => {
-            if (response?.credential && isMounted) {
+            if (response?.credential) {
               await onCredentialSuccess(response.credential);
             }
           },
@@ -120,7 +120,7 @@ export default function GoogleSignInButton({ redirectUrl = '/events' }: Props) {
     try {
       const success = await googleLogin();
       if (success) {
-        router.push(redirectUrl);
+        window.location.href = redirectUrl;
       }
     } finally {
       setSigningIn(false);
@@ -136,7 +136,7 @@ export default function GoogleSignInButton({ redirectUrl = '/events' }: Props) {
         </div>
       ) : (
         <>
-          {/* Official Google-rendered button (cannot be blocked by popup blocker) */}
+          {/* Official Google-rendered button (immune to browser popup blocker) */}
           <div
             ref={btnContainerRef}
             className={`w-full flex justify-center ${rendered ? 'block' : 'hidden'}`}

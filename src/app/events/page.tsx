@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { EventItem } from '@/lib/types';
+import { DEFAULT_EVENTS } from '@/lib/defaultEvents';
 import EventCard from '@/components/EventCard';
 import EventSkeleton from '@/components/EventSkeleton';
 import { Search, Filter, Calendar, Sparkles } from 'lucide-react';
@@ -29,9 +30,30 @@ export default function UpcomingEventsPage() {
         }
 
         const data = await api.get<EventItem[]>(`/events?${params.toString()}`);
-        setEvents(data || []);
+        if (data && data.length > 0) {
+          setEvents(data);
+        } else {
+          let filtered = [...DEFAULT_EVENTS];
+          if (selectedCategory && selectedCategory !== 'All') {
+            filtered = filtered.filter(e => e.eventType.toLowerCase() === selectedCategory.toLowerCase());
+          }
+          if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            filtered = filtered.filter(e => e.title.toLowerCase().includes(q) || e.location.toLowerCase().includes(q));
+          }
+          setEvents(filtered);
+        }
       } catch (error) {
-        console.error('Failed to load upcoming events:', error);
+        console.warn('Backend unavailable, showing default community events:', error);
+        let filtered = [...DEFAULT_EVENTS];
+        if (selectedCategory && selectedCategory !== 'All') {
+          filtered = filtered.filter(e => e.eventType.toLowerCase() === selectedCategory.toLowerCase());
+        }
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          filtered = filtered.filter(e => e.title.toLowerCase().includes(q) || e.location.toLowerCase().includes(q));
+        }
+        setEvents(filtered);
       } finally {
         setLoading(false);
       }

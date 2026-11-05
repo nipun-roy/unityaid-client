@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { EventItem } from '@/lib/types';
+import { DEFAULT_EVENTS } from '@/lib/defaultEvents';
 import EventCard from '@/components/EventCard';
 import EventSkeleton from '@/components/EventSkeleton';
 import StatSection from '@/components/StatSection';
@@ -32,9 +33,14 @@ export default function HomePage() {
         setLoading(true);
         // Note: the backend uses MongoDB's .limit() operator when ?limit=6 is passed
         const data = await api.get<EventItem[]>('/events?limit=6');
-        setEvents(data || []);
+        if (data && data.length > 0) {
+          setEvents(data);
+        } else {
+          setEvents(DEFAULT_EVENTS.slice(0, 6));
+        }
       } catch (error) {
-        console.error('Failed to load recent events:', error);
+        console.warn('Backend unavailable, showing default recent events:', error);
+        setEvents(DEFAULT_EVENTS.slice(0, 6));
       } finally {
         setLoading(false);
       }

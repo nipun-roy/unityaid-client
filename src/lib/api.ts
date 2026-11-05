@@ -27,8 +27,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const errorMsg = data?.message || 'An unexpected error occurred';
-    throw new Error(errorMsg);
+    const errorMsg = data?.message || `Request failed with status ${response.status}`;
+    const err: any = new Error(errorMsg);
+    err.status = response.status;
+    throw err;
   }
 
   return data as T;

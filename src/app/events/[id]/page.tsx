@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { EventItem } from '@/lib/types';
+import { DEFAULT_EVENTS } from '@/lib/defaultEvents';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import { 
@@ -37,8 +38,17 @@ export default function EventDetailsPage() {
     async function loadEventData() {
       try {
         setLoading(true);
-        const data = await api.get<EventItem>(`/events/${id}`);
-        setEvent(data);
+        try {
+          const data = await api.get<EventItem>(`/events/${id}`);
+          setEvent(data);
+        } catch {
+          const fallback = DEFAULT_EVENTS.find((e) => e._id === id);
+          if (fallback) {
+            setEvent(fallback);
+          } else {
+            throw new Error('Event not found');
+          }
+        }
 
         // If user is logged in, check if they already joined
         if (user) {
