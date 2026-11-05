@@ -112,3 +112,4 @@ export const DEFAULT_EVENTS: EventItem[] = [
     attendeesCount: 47,
   },
 ];
+
