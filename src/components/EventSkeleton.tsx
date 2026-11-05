@@ -4,7 +4,10 @@ import React from 'react';
 
 export default function EventSkeleton() {
   return (
-    <div className="card bg-base-100 border border-base-200 shadow-sm rounded-2xl overflow-hidden animate-pulse flex flex-col h-full">
+    <div 
+      aria-label="Loading event card..." 
+      className="card bg-base-100 border border-base-200 shadow-sm rounded-2xl overflow-hidden animate-pulse flex flex-col h-full"
+    >
       {/* Thumbnail Skeleton */}
       <div className="h-48 w-full bg-base-300"></div>
 
