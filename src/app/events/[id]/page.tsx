@@ -107,6 +107,7 @@ export default function EventDetailsPage() {
     }
   };
 
+  // Generate one-click Google Calendar import URL for volunteer convenience
   const getGoogleCalendarUrl = () => {
     if (!event) return '#';
     const title = encodeURIComponent(event.title);
