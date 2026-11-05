@@ -57,7 +57,7 @@ export default function CreateEventPage() {
       return;
     }
 
-    // Past date validation
+    // Strict future date validation according to assignment requirement
     if (formData.eventDate < todayStr) {
       toast.error('Event date must be in the future. Past dates are not allowed.');
       return;
