@@ -6,6 +6,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { User, Mail, Image as ImageIcon, Save, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+// Volunteer Profile View & Edit Page (Satisfies Optional Task 2)
 export default function ProfilePage() {
   const { user, updateUserProfile } = useAuth();
 
