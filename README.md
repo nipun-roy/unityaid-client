@@ -5,9 +5,9 @@
 ---
 
 ## 🔗 Live Site URL & Submission Links
-- **Live Site URL**: [https://unityaid-impact.vercel.app](https://unityaid-impact.vercel.app) *(Replace with your deployed Vercel URL)*
-- **Client GitHub Repository**: [https://github.com/your-username/unityaid-client](https://github.com/your-username/unityaid-client)
-- **Server GitHub Repository**: [https://github.com/your-username/unityaid-server](https://github.com/your-username/unityaid-server)
+- **Live Site URL**: [https://unityaid-client-five.vercel.app](https://unityaid-client-five.vercel.app)
+- **Client GitHub Repository**: [https://github.com/nipun-roy/unityaid-client](https://github.com/nipun-roy/unityaid-client)
+- **Server GitHub Repository**: [https://github.com/nipun-roy/unityaid-server](https://github.com/nipun-roy/unityaid-server)
 
 ---
 
